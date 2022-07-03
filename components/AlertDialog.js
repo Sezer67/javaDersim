@@ -4,6 +4,7 @@ import { Dialog, Paragraph, Portal } from 'react-native-paper'
 import { COLORS, FONTS, icons } from '../constants'
 
 const AlertDialog = ({visible,setVisible,content}) => {
+    console.log(content);
   return (
     <Portal>
         <Dialog style={{opacity:.95,backgroundColor:COLORS.light,elevation:12}} visible={visible} onDismiss={()=>setVisible(false)}>

@@ -1,17 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {View, Text, StatusBar, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image} from 'react-native';
 import { getAllTests } from '../../api/testApi';
 import Loading from '../../components/Loading';
-import {COLORS, FONTS, icons} from '../../constants';
+import {COLORS, FONTS, icons, images} from '../../constants';
 import {STYLE} from '../../styles';
 
+import UserContext from '../../context/UserContext';
 const {width, height} = Dimensions.get('window');
 
 
-const _renderItem = ({item,navigation}) => {
+const _renderItem = ({item,navigation,completedTest,wrongTest}) => {
   //completed kontrol işlemi yapılacak
+  let test = completedTest.find(id=>id===item._id) ? "completed" : "notCompleted";
+  test = wrongTest.find(id=>id===item._id) ? "wrong" :test
   return (
-    <TouchableOpacity onPress={()=>navigation.navigate('LessonView',{lesson:item})}
+    <TouchableOpacity onPress={()=>navigation.navigate('TestView',{test:item,completed:test})}
       style={{
         display: 'flex',
         flexDirection: 'row',
@@ -19,40 +22,67 @@ const _renderItem = ({item,navigation}) => {
         borderColor: COLORS.dark,
         marginBottom: 10,
         paddingBottom: 10,
-        justifyContent: 'space-around',
+        paddingHorizontal:10,
+        justifyContent: 'space-between',
         alignItems: 'center',
       }}>
       <Text style={{...FONTS.h2, color: COLORS.dark}}>{item.no}</Text>
       <Text
         style={{
           ...FONTS.h2,
-          flexGrow: 0.3,
           color: COLORS.dark,
           fontWeight: '600',
         }}>
-        {item.question.question.substring(0,25)}
+        {item.name}
       </Text>
-      <Image source={item.completed ? icons.completed : icons.not_complete} />
+      <Image source={test === "completed" ? icons.correctTest : (test === "wrong" ? icons.failTest : icons.not_complete)} />
     </TouchableOpacity>
   );
 };
 
-
 const Test = ({navigation}) => {
   const [tests,setTests] = useState([]);
   const [loading,setLoading] = useState(false);
-
+  const {user} = useContext(UserContext)
   useEffect(()=>{
     setLoading(true);
     getAllTests().then(res=>{
       setLoading(false);
       setTests(res.data.tests);
-      console.log('res : ',res.data);
     }).catch(error=>{
       setLoading(false);
-      console.log('error',error.response.data.message)
     });
   },[])
+
+  const StatisticCalculate = () =>{
+    const totalCompleted = user.completedTest.length + user.wrongTest.length;
+    return (
+      <>
+        <View style={{display:'flex',marginVertical:10,marginTop:20,flexDirection:'row',alignItems:'center'}}>
+              <Text style={style.txtTitle}>Toplam Çözülen Test Sayısı : </Text>
+              <Text style={style.txtValue}>{totalCompleted}</Text>
+          </View>
+          
+          <View style={{display:'flex',marginVertical:10,flexDirection:'row',alignItems:'center'}}>
+              <Text style={style.txtTitle}>Doğru Çözülen Test Sayısı : </Text>
+              <Text style={style.txtValue}>{user.completedTest.length}</Text>
+          </View>
+          {
+            totalCompleted === user.completedTest.length && (
+              <View style={{position:'absolute',top:'25%',right:0}}>
+                <Image 
+                  source={icons.success}
+                  style={{
+                    tintColor:'#ffc107'
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            )
+          }
+      </>
+    )
+  }
 
   if(loading) return <Loading />;
 
@@ -80,15 +110,7 @@ const Test = ({navigation}) => {
               }}
             />
           </View>
-          <View style={{display:'flex',marginVertical:10,marginTop:20,flexDirection:'row',alignItems:'center'}}>
-              <Text style={style.txtTitle}>Toplam Çözülen Test Sayısı : </Text>
-              <Text style={style.txtValue}>15</Text>
-          </View>
-          
-          <View style={{display:'flex',marginVertical:10,flexDirection:'row',alignItems:'center'}}>
-              <Text style={style.txtTitle}>Doğru Çözülen Test Sayısı : </Text>
-              <Text style={style.txtValue}>8</Text>
-          </View>
+          <StatisticCalculate />
           
         </View>
       </View>
@@ -96,7 +118,7 @@ const Test = ({navigation}) => {
         <FlatList 
           data={tests}
           keyExtractor={(item)=>item._id}
-          renderItem={({item})=><_renderItem item={item} navigation={navigation} />}
+          renderItem={({item})=><_renderItem item={item} completedTest={user.completedTest} wrongTest={user.wrongTest} navigation={navigation} />}
         />
       </View>
     </View>

@@ -54,7 +54,7 @@ const Register = ({navigation}) => {
         await AsyncStorage.setItem('userID',res.data.user._id)
         setTimeout(()=>{
           setVisible(false);
-          navigation.navigate('Lesson');
+          navigation.navigate('Tabs');
         },1000);
       })
       .catch((error) => {

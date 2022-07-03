@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,10 @@ import {Dimensions} from 'react-native';
 import {COLORS, FONTS} from '../../constants/theme';
 import {Formik} from 'formik';
 import * as yup from 'yup';
-import {loginUser} from '../../api/authApi';
+import {getUser, loginUser} from '../../api/authApi';
 import AlertDialog from '../../components/AlertDialog';
+import Loading from '../../components/Loading';
+import UserContext from '../../context/UserContext';
 const {width, height} = Dimensions.get('window');
 const initialValues = {
   username: '',
@@ -30,11 +32,33 @@ const loginValidationSchema = yup.object().shape({
 const Login = ({navigation}) => {
   const [visible, setVisible] = useState(false);
   const [content, setContent] = useState({});
+  const [loading,setLoading] = useState(false);
 
-  const userId = AsyncStorage.getItem('userID');
+  const {user,setUser} = useContext(UserContext);
 
-  if(userId)
-    navigation.navigate('Lesson');
+  const authUser = async() =>{
+    setLoading(true);
+    try{
+      const userId = await AsyncStorage.getItem('userID');
+      if(userId){
+        getUser().then(res=>{
+          setUser(res.data.user);
+        }).catch(error=>{
+          console.log(error);
+        })
+        navigation.navigate('Tabs');
+      }
+      setLoading(false);
+    }catch(err){
+      console.log(err);
+      setLoading(false);
+    }
+  }
+
+  useEffect(()=>{
+    authUser();
+  },[])
+  
 
   const handleSubmit = values => {
     //values = {password:str,username:str}
@@ -48,9 +72,10 @@ const Login = ({navigation}) => {
         setContent(result);
         setVisible(true);
         await AsyncStorage.setItem('userID', res.data.user._id);
+        setUser(res.data.user);
         setTimeout(() => {
           setVisible(false);
-          navigation.navigate('Lesson');
+          navigation.navigate('Tabs');
         }, 1000);
       })
       .catch(error => {
@@ -63,6 +88,8 @@ const Login = ({navigation}) => {
         setContent(err);
       });
   };
+
+  if(loading) return <Loading />
 
   return (
     <View style={{...STYLE.screen, ...STYLE.center}}>

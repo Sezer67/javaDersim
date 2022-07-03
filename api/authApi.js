@@ -22,3 +22,14 @@ export const getUser = async() =>{
         console.log("API GET USER : ",err);
     }
 }
+
+export const updateByUserId = async(data) =>{
+    console.log(data);
+    try{
+        const userID = await AsyncStorage.getItem('userID');
+        const user = await axios.put(`${uri}/${userID}`,data);
+        return user;
+    }catch(err){
+        console.log("API GET USER : ",err);
+    }
+}

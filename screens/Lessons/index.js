@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {COLORS, FONTS, icons} from '../../constants';
 import {STYLE} from '../../styles';
 const {width, height} = Dimensions.get('window');
 import Loading from '../../components/Loading'
+import UserContext from '../../context/UserContext';
 
 const _pagination = ({page, setPage , length}) => {
   return (
@@ -61,10 +62,11 @@ const _pagination = ({page, setPage , length}) => {
   );
 };
 
-const _renderItem = ({item,navigation}) => {
+const _renderItem = ({item,navigation,completedLesson}) => {
   //completed kontrol işlemi yapılacak
+  const completed = completedLesson.find(lesson=>lesson===item._id) ? true : false;
   return (
-    <TouchableOpacity onPress={()=>navigation.navigate('LessonView',{lesson:item})}
+    <TouchableOpacity onPress={()=>navigation.navigate('LessonView',{lesson:item,completed})}
       style={{
         display: 'flex',
         flexDirection: 'row',
@@ -72,7 +74,8 @@ const _renderItem = ({item,navigation}) => {
         borderColor: COLORS.dark,
         marginBottom: 10,
         paddingBottom: 10,
-        justifyContent: 'space-around',
+        paddingHorizontal:10,
+        justifyContent: 'space-between',
         alignItems: 'center',
       }}>
       <Text style={{...FONTS.h2, color: COLORS.dark}}>{item.no}</Text>
@@ -83,9 +86,9 @@ const _renderItem = ({item,navigation}) => {
           color: COLORS.dark,
           fontWeight: '600',
         }}>
-        {item.name}
+        {item.name.substring(0,28)}{item.name.length>28 && "..."}
       </Text>
-      <Image source={item.completed ? icons.completed : icons.not_complete} />
+      <Image source={completed ? icons.completed : icons.not_complete} />
     </TouchableOpacity>
   );
 };
@@ -96,42 +99,49 @@ const Lesson = ({navigation}) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState({});
+
+  const {user} = useContext(UserContext);
+  const statisticDatas = [
+    {
+      rangeStart:0,
+      rangeEnd:20,
+      text:"HAYDİ BAŞLA, BU İŞLER YAVAŞ OLMAZ"
+    },
+    {
+      rangeStart:20,
+      rangeEnd:50,
+      text:"DERSLER ZORLAŞABİLİR. BAŞARIN BUNUN ARKASINDA"
+    },
+    {
+      rangeStart:50,
+      rangeEnd:80,
+      text:"BURDAN SONRASI DAHA ÇOK ÇALIŞMA"
+    },
+    {
+      rangeStart:80,
+      rangeEnd:100,
+      text:"ÇOK İYİ GİDİYORSUN AZ KALDI"
+    },
+    {
+      rangeStart:100,
+      rangeEnd:101,
+      text:`TEBRİKLER ${user && user.username.toUpperCase()}. JAVA GELİŞTİRMEYE HAZIRSIN`
+    },
+  ];
   //tek listede 7 adet görüntülenecek
   const perPage = 7;
-  useEffect(() => {
-    setLoading(true);
 
-    getAllLessons()
-      .then(res => {
-        setLessons(res.data.lessons);
-        setLoading(false);
-        console.log('THEN : ', res.data);
-      })
-      .catch(error => {
-        console.log('CATCH : ', error);
-        const err = {
-          title: 'HATA',
-          status: error.response.data.status,
-          message: error.response.data.message,
-        };
-        setVisible(true);
-        setContent(err);
-        setLoading(false);
-      });
-  }, []);
-  if(loading) return <Loading />
-  return (
-    <View style={STYLE.screen}>
-    <StatusBar backgroundColor={COLORS.dark} />
-      {visible && (
-        <AlertDialog
-          visible={visible}
-          setVisible={setVisible}
-          content={content}
-        />
-      )}
-      <View style={style.topContainer}>
-        <View
+  const StatisticCalculate = () =>{
+
+    let text = "";
+    const rangeOfUser = (user.completedLesson.length / lessons.length) * 100;
+    text = statisticDatas.find(data=>{
+      if(rangeOfUser>= data.rangeStart && rangeOfUser< data.rangeEnd)
+        return data;
+    }).text;
+
+    return (
+      <View
           style={{
             display: 'flex',
             flexDirection: 'row',
@@ -143,17 +153,55 @@ const Lesson = ({navigation}) => {
               ...FONTS.h2,
               color: COLORS.light,
               flex: 0.75,
-              fontWeight: '600',
+              fontWeight: '900',
             }}>
-            ÇOK İYİ GİDİYORSUN AZ KALDI
+            {
+              text
+            }
           </Text>
           <View style={style.circle}>
             <Text
-              style={{...FONTS.h1, color: COLORS.primary, fontWeight: 'bold'}}>
-              %85
+              style={{...FONTS.h1, color: COLORS.primary,fontWeight: 'bold'}}>
+              %{rangeOfUser}
             </Text>
           </View>
         </View>
+    )
+  }
+
+  useEffect(() => {
+    setLoading(true);
+
+    getAllLessons()
+      .then(res => {
+        setLessons(res.data.lessons);
+        setLoading(false);
+      
+      })
+      .catch(error => {
+        const err = {
+          title: 'HATA',
+          status: error.response.data.status,
+          message: error.response.data.message,
+        };
+        setVisible(true);
+        setContent(err);
+        setLoading(false);
+      });
+  }, []);
+  if(loading || !user) return <Loading />
+  return (
+    <View style={STYLE.screen}>
+    <StatusBar backgroundColor={COLORS.dark} />
+      {visible && (
+        <AlertDialog
+          visible={visible}
+          setVisible={setVisible}
+          content={content}
+        />
+      )}
+      <View style={style.topContainer}>
+        <StatisticCalculate />
         <View style={{...STYLE.center}}>
           <Text
             style={{
@@ -172,7 +220,7 @@ const Lesson = ({navigation}) => {
           ListFooterComponent={() => (
             <_pagination length={lessons.length}  page={page} setPage={setPage} />
           )}
-          renderItem={({item})=>(<_renderItem item={item} navigation={navigation} />)}
+          renderItem={({item})=>(<_renderItem item={item} completedLesson={user.completedLesson} navigation={navigation} />)}
           keyExtractor={item => item.no.toString()}
         />
       </View>

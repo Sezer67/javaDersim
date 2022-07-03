@@ -11,3 +11,4 @@ export const getLessonbyId = async(id) =>{
     const result = await axios.get(`${uri}/${id}`);
     return result;
 }
+

@@ -9,7 +9,10 @@ import error from '../assets/icons/error.png'
 import success from '../assets/icons/success.png'
 import completed from '../assets/icons/completed.png'
 import not_complete from '../assets/icons/tasks.png'
-
+import failTest from '../assets/icons/failTest.png';
+import correctTest from '../assets/icons/correctTest.png';
+import calendar from '../assets/icons/calendar.png';
+import add from '../assets/icons/add.png';
 export default {
     back_arrow,
     right_arrow,
@@ -17,5 +20,6 @@ export default {
     down_arrow,
     lesson,
     notes,
-    test,success,error,completed,not_complete
+    add,
+    test,success,error,completed,not_complete,correctTest,failTest,calendar
 };
